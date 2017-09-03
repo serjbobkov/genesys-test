@@ -12,9 +12,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class EventGenerator {
 
-    private int count;
-    private int frequence;
-    private File file;
+    private final  int count;
+    private final int frequence;
+    private final File file;
 
     public EventGenerator(final int count, final int frequence, final File file) {
         this.count = count;
