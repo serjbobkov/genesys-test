@@ -17,12 +17,12 @@ package ru.bsa.test.generator.event;
     OriginationChannel	String	start	“webchat”, “sms”, “wechat”	Must be chosen randomly for each interaction.
 **/
 
-import java.text.DecimalFormat;
+
 import java.util.Date;
-import java.util.TimeZone;
 import java.util.UUID;
 
-public class Event implements Cloneable {
+public class Event {
+
 
     private UUID id;
     private EventType eventType;
@@ -37,10 +37,25 @@ public class Event implements Cloneable {
     private OriginationChannel originationChannel;
 
 
-    private static DecimalFormat formatter = new DecimalFormat("#00.###");
+    public Event() {
+    }
 
     public Event(UUID id, EventType eventType, Date eventTimeStamp, Date createTime, ServiceType serviceType, OriginationPage originationPage,
                  OriginationChannel originationChannel) {
+        this.id = id;
+        this.eventType = eventType;
+        this.eventTimeStamp = eventTimeStamp;
+        this.createTime = createTime;
+        this.deliveryTime = deliveryTime;
+        this.endTime = endTime;
+        this.serviceType = serviceType;
+        this.originationPage = originationPage;
+        this.agentId = agentId;
+        this.endReason = endReason;
+        this.originationChannel = originationChannel;
+    }
+
+    private Event(UUID id, EventType eventType, Date eventTimeStamp, Date createTime, Date deliveryTime, Date endTime, ServiceType serviceType, OriginationPage originationPage, String agentId, EndReason endReason, OriginationChannel originationChannel) {
         this.id = id;
         this.eventType = eventType;
         this.eventTimeStamp = eventTimeStamp;
@@ -142,43 +157,6 @@ public class Event implements Cloneable {
         this.originationChannel = originationChannel;
     }
 
-    public String toJSON() {
-        StringBuilder b = new StringBuilder();
-        b.append("{");
-        b.append("\"AgentId\":\"").append(agentId == null ? "undefined" : agentId).append("\",");
-        b.append("\"CreateTime\":\"").append(convertDate2Json(createTime)).append("\",");
-        b.append("\"DeliveryTime\":\"").append(convertDate2Json(deliveryTime)).append("\",");
-        b.append("\"EndReason\":\"").append(endReason == null ? "undefined" : endReason.getTitle()).append("\",");
-        b.append("\"EndTime\":\"").append(convertDate2Json(endTime)).append("\",");
-        b.append("\"EventTimeStamp\":\"").append(convertDate2Json(eventTimeStamp)).append("\",");
-        b.append("\"EventType\":\"").append(eventType == null ? "undefined" : eventType.getTitle()).append("\",");
-        b.append("\"Id\":\"").append(id == null ? "undefined" : id.toString()).append("\",");
-        b.append("\"OriginationChannel\":\"").append(originationChannel == null ? "undefined" : originationChannel.getTitle()).append("\",");
-        b.append("\"OriginationPage\":\"").append(originationPage == null ? "undefined" : originationPage.getTitle()).append("\",");
-        b.append("\"ServiceType\":\"").append(serviceType == null ? "undefined" : serviceType.getTitle()).append("\"");
-        b.append("}");
-        return b.toString();
-    }
-
-
-    private String convertDate2Json(Date date) {
-        if (date == null) {
-            return convertDate2Json(new Date(0L));
-        } else {
-            int zoneOffsetMillisecond = TimeZone.getDefault().getOffset(date.getTime());
-            String sign = "+";
-            if (zoneOffsetMillisecond < 0) { // negative offset
-                sign = "-";
-                zoneOffsetMillisecond *= -1;
-            }
-            int minute = (int) (zoneOffsetMillisecond % 60L * 60 * 1000);
-
-            int hour = (zoneOffsetMillisecond / 1000 / 60 / 60);
-            return "/Date(" + date.getTime() + sign + formatter.format(hour) + formatter.format(minute) + ")/";
-        }
-    }
-
-
     @Override
     public String toString() {
         return "Event{" +
@@ -194,5 +172,22 @@ public class Event implements Cloneable {
                 ", endReason=" + endReason +
                 ", originationChannel=" + originationChannel +
                 '}';
+    }
+
+
+    public Event copy() {
+        return new Event(
+                new UUID(id.getMostSignificantBits(), id.getLeastSignificantBits()),
+                eventType,
+                eventTimeStamp == null ? null : new Date(eventTimeStamp.getTime()),
+                createTime == null ? null : new Date(createTime.getTime()),
+                deliveryTime == null ? null : new Date(deliveryTime.getTime()),
+                endTime == null ? null : new Date(endTime.getTime()),
+                serviceType,
+                originationPage,
+                agentId,
+                endReason,
+                originationChannel
+        );
     }
 }

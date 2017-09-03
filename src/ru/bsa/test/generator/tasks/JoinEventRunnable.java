@@ -1,11 +1,11 @@
 package ru.bsa.test.generator.tasks;
 
 import ru.bsa.test.filewriter.EventFileWriter;
+import ru.bsa.test.filewriter.exception.EventFileWriterException;
 import ru.bsa.test.generator.event.Event;
 import ru.bsa.test.generator.event.EventType;
 import ru.bsa.test.generator.event.EventUtil;
 
-import java.io.FileWriter;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,17 +36,20 @@ public class JoinEventRunnable implements Runnable {
         event.setDeliveryTime(new Date());
         event.setAgentId(EventUtil.getRandomAgentId());
 
-        System.out.println("Join event: " + event);
+        Event copy = event.copy();
 
         //write
-        fileWriter.write(event);
+        try {
+            fileWriter.write(event);
+        } catch (EventFileWriterException e) {
+            throw new RuntimeException(e);
+        }
 
         //schedule
-        StopEventRunnable stopEventRunnable = new StopEventRunnable(event, fileWriter, latch);
+        StopEventRunnable stopEventRunnable = new StopEventRunnable(copy, fileWriter, latch);
         scheduledThreadPoolExecutor.schedule(stopEventRunnable, delay, TimeUnit.MILLISECONDS);
 
-        latch.countDown();
-
     }
+
 
 }

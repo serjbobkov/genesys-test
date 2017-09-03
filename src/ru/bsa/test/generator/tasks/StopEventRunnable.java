@@ -1,6 +1,7 @@
 package ru.bsa.test.generator.tasks;
 
 import ru.bsa.test.filewriter.EventFileWriter;
+import ru.bsa.test.filewriter.exception.EventFileWriterException;
 import ru.bsa.test.generator.event.Event;
 import ru.bsa.test.generator.event.EventType;
 import ru.bsa.test.generator.event.EventUtil;
@@ -28,9 +29,11 @@ public class StopEventRunnable implements Runnable {
         event.setEventType(EventType.END);
         event.setEndReason(EventUtil.getRandomEndReason());
 
-        System.out.println("Stop event: " + event);
-
-        eventFileWriter.write(event);
+        try {
+            eventFileWriter.write(event);
+        } catch (EventFileWriterException e) {
+            throw new RuntimeException(e);
+        }
 
         latch.countDown();
 

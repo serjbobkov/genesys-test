@@ -1,6 +1,8 @@
 package ru.bsa.test.generator;
 
 import ru.bsa.test.filewriter.EventFileWriter;
+import ru.bsa.test.filewriter.exception.EventFileWriterException;
+import ru.bsa.test.generator.exception.EventGeneratorException;
 import ru.bsa.test.generator.tasks.StartEventRunnable;
 
 import java.io.File;
@@ -20,12 +22,12 @@ public class EventGenerator {
         this.file = file;
     }
 
-    public void generate() {
+    public void generate() throws EventGeneratorException {
 
         synchronized (this) {
 
             //счетчик созданных событий
-            CountDownLatch latch = new CountDownLatch(3 * count);
+            CountDownLatch latch = new CountDownLatch(count);
 
             //тред с очередью записи в файл
             EventFileWriter fileWriter = new EventFileWriter(file);
@@ -40,15 +42,20 @@ public class EventGenerator {
             scheduledThreadPoolExecutor.execute(startEventRunnable);
 
 
-
             try {
                 latch.await();
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+                throw new EventGeneratorException("Exception occured: " + e.getMessage(), e);
+            } finally {
+                scheduledThreadPoolExecutor.shutdown();
 
-            scheduledThreadPoolExecutor.shutdown();
-            fileWriter.setOpen(false);
+                try {
+                    fileWriter.write(EventFileWriter.FINISH_EVENT);
+                } catch (EventFileWriterException e) {
+                    throw new EventGeneratorException("Exception occured: " + e.getMessage(), e);
+                }
+
+            }
 
 
         }

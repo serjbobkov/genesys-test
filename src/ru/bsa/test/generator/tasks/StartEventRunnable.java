@@ -1,6 +1,7 @@
 package ru.bsa.test.generator.tasks;
 
 import ru.bsa.test.filewriter.EventFileWriter;
+import ru.bsa.test.filewriter.exception.EventFileWriterException;
 import ru.bsa.test.generator.event.Event;
 import ru.bsa.test.generator.event.EventType;
 import ru.bsa.test.generator.event.EventUtil;
@@ -35,32 +36,52 @@ public class StartEventRunnable implements Runnable {
     @Override
     public void run() {
 
-        for (int i = 0; i < countAtTime && counter > 0; i++, counter--) {
 
-            //create event
-            Event event = new Event(UUID.randomUUID(), EventType.START, new Date(), new Date(),
-                    EventUtil.getRandomServiceType(),
-                    EventUtil.getRandomOriginationPage(),
-                    EventUtil.getRandomOriginationChannel());
+        while (counter > 0) {
 
-            System.out.println("Start event: " + event);
+            Long start = System.currentTimeMillis();
 
-            //write event
-            fileWriter.write(event);
+            for (int i = 0; i < countAtTime && counter > 0; i++, counter--) {
 
-            //create join scheduled event
-            final long delay = EventUtil.generateNextEventDelay(event.getEventType());
+                //create event
+                Event event = new Event(UUID.randomUUID(), EventType.START, new Date(), new Date(),
+                        EventUtil.getRandomServiceType(),
+                        EventUtil.getRandomOriginationPage(),
+                        EventUtil.getRandomOriginationChannel());
 
-            JoinEventRunnable joinEventRunnable = new JoinEventRunnable(scheduledThreadPoolExecutor, event, fileWriter, countDownLatch);
-            scheduledThreadPoolExecutor.schedule(joinEventRunnable, delay, TimeUnit.MILLISECONDS);
+                //write event
 
-            countDownLatch.countDown();
+                Event copy = event.copy();
+
+                try {
+                    fileWriter.write(event);
+                } catch (EventFileWriterException e) {
+                    throw new RuntimeException(e);
+                }
+
+                //create join scheduled event
+                final long delay = EventUtil.generateNextEventDelay(event.getEventType());
+
+                JoinEventRunnable joinEventRunnable = new JoinEventRunnable(scheduledThreadPoolExecutor, copy, fileWriter, countDownLatch);
+                scheduledThreadPoolExecutor.schedule(joinEventRunnable, delay, TimeUnit.MILLISECONDS);
+
+            }
+
+            Long end = System.currentTimeMillis();
+
+
+            try {
+                Thread.sleep(1000L - (end - start));
+            } catch (InterruptedException e) {
+                //skip it
+            }
+
         }
 
 
-        if (counter > 0) {
-            scheduledThreadPoolExecutor.schedule(this, 1L, TimeUnit.SECONDS);
-        }
+//        if (counter > 0) {
+//            scheduledThreadPoolExecutor.schedule(this, 1L, TimeUnit.SECONDS);
+//        }
 
 
     }
